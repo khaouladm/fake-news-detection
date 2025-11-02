@@ -3,21 +3,26 @@ import json
 import time
 from datetime import datetime, timedelta
 import streamlit as st
-from config import NEWS_API_CONFIG, SEARCH_QUERIES
+from config import SEARCH_QUERIES 
 
 class NewsFetcher:
     def __init__(self):
+        # Charger les clés depuis st.secrets (méthode sécurisée)
         self.newsapi_key = st.secrets.get("NEWSAPI_KEY", "")
         self.gnews_key = st.secrets.get("GNEWS_KEY", "")
     
-    def fetch_from_newsapi(self, query="news", hours_back=24):
+    def fetch_from_newsapi(self, query="news", hours_back=24, lang='en'):
         """Fetch news from NewsAPI"""
+        
+        # Logique pour utiliser aussi la clé de la session
+        if not self.newsapi_key and 'newsapi_key' in st.session_state:
+             self.newsapi_key = st.session_state.newsapi_key
+
         if not self.newsapi_key:
             st.error("NewsAPI key not configured")
             return []
         
         try:
-            # Calculate date (newsapi requires paid plan for full access)
             from_date = (datetime.now() - timedelta(hours=hours_back)).strftime('%Y-%m-%d')
             
             url = "https://newsapi.org/v2/everything"
@@ -25,7 +30,7 @@ class NewsFetcher:
                 'q': query,
                 'from': from_date,
                 'sortBy': 'publishedAt',
-                'language': 'en',
+                'language': lang,  # <-- MODIFICATION: Utilise le paramètre lang
                 'apiKey': self.newsapi_key,
                 'pageSize': 20
             }
@@ -37,23 +42,29 @@ class NewsFetcher:
                 return self._process_articles(articles, 'newsapi')
             else:
                 st.warning(f"NewsAPI returned status {response.status_code}")
+                st.warning(f"Response: {response.text}")
                 return []
                 
         except Exception as e:
             st.error(f"Error fetching from NewsAPI: {e}")
             return []
     
-    def fetch_from_gnews(self, query="news"):
+    def fetch_from_gnews(self, query="news", lang='en'):
         """Fetch news from GNews API (free tier available)"""
+        
+        # Logique pour utiliser aussi la clé de la session (de la page API Settings)
+        if not self.gnews_key and 'gnews_key' in st.session_state:
+             self.gnews_key = st.session_state.gnews_key
+        
         if not self.gnews_key:
-            st.error("GNews API key not configured")
+            st.error("GNews API key not configured. Please add it in API Settings.")
             return []
         
         try:
             url = "https://gnews.io/api/v4/top-headlines"
             params = {
                 'token': self.gnews_key,
-                'lang': 'en',
+                'lang': lang,  # MODIFICATION: Utilise le paramètre lang
                 'max': 20,
                 'q': query
             }
@@ -66,6 +77,7 @@ class NewsFetcher:
                 return self._process_articles(articles, 'gnews')
             else:
                 st.warning(f"GNews returned status {response.status_code}")
+                st.warning(f"Response: {response.text}")
                 return []
                 
         except Exception as e:
@@ -77,7 +89,6 @@ class NewsFetcher:
         processed = []
         
         for article in articles:
-            # Standardize article format
             processed_article = {
                 'title': article.get('title', ''),
                 'description': article.get('description', ''),
@@ -88,25 +99,25 @@ class NewsFetcher:
                 'api_source': source
             }
             
-            # Only include articles with sufficient content
             if processed_article['content'] and len(processed_article['content']) > 50:
                 processed.append(processed_article)
         
         return processed
     
-    def fetch_real_time_news(self, queries=None):
+    def fetch_real_time_news(self, queries=None, lang='en'):
         """Fetch real-time news from multiple sources"""
         if queries is None:
             queries = SEARCH_QUERIES
         
         all_articles = []
         
-        with st.spinner("Fetching real-time news..."):
-            for query in queries[:3]:  # Limit to 3 queries for demo
-                st.write(f"Searching for: {query}")
+        # MODIFICATION: Affiche la langue dans le message
+        with st.spinner(f"Fetching real-time news for '{queries[0]}' in language '{lang}'..."):
+            for query in queries[:3]: # Limit to 3 queries for demo
                 
                 # Fetch from GNews (more free-friendly)
-                articles = self.fetch_from_gnews(query)
+                # MODIFICATION: Passe le paramètre 'lang'
+                articles = self.fetch_from_gnews(query, lang=lang)
                 all_articles.extend(articles)
                 
                 # Add small delay to avoid rate limiting
