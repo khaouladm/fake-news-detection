@@ -48,3 +48,4 @@ textblob>=0.17.0
 wordcloud>=1.8.0
 gensim>=4.2.0
 deep-translator
+treamlit-autorefresh

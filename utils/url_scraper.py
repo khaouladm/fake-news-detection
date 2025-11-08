@@ -164,7 +164,8 @@ class URLScraper:
         if not url.startswith(('http://', 'https://')):
             url = 'https://' + url
         
-        st.info(f"🔍 Scraping content from: {url}")
+        alert_box("Message à afficher", alert_type="success")
+
         
         # Try newspaper3k first
         result = self.scrape_with_newspaper3k(url)
@@ -173,7 +174,7 @@ class URLScraper:
             return result
         
         # If newspaper3k fails, try BeautifulSoup
-        st.info("Trying alternative scraping method...")
+        alert_box("Trying alternative scraping method...", alert_type="info")
         result = self.scrape_with_bs4(url)
         
         if result['success']:

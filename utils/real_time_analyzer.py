@@ -7,7 +7,8 @@ import re
 try:
     from utils.bert_predictor import BERTPredictor
 except ImportError as e:
-    st.error(f"Import error: {e}")
+    # Pas de notification d'erreur
+    pass
 
 class RealTimeAnalyzer:
     def __init__(self):
@@ -16,19 +17,14 @@ class RealTimeAnalyzer:
         self.load_models()
     
     def load_models(self):
-        """Load BERT-based models"""
+        """Load BERT-based models silently"""
         try:
             self.bert_predictor = BERTPredictor()
             self.model_loaded = self.bert_predictor.load_models()
-            
-            if self.model_loaded:
-                st.success("🚀 BERT Model Ready - High Accuracy Expected!")
-            else:
-                st.warning("⚠️ Using rule-based analyzer as fallback")
-                self.model_loaded = False
+            # Pas de messages de succès/erreur
                 
         except Exception as e:
-            st.warning(f"⚠️ Using fallback analyzer: {str(e)}")
+            # Pas de notification d'erreur
             self.model_loaded = False
     
     def enhanced_pre_detection(self, text):
@@ -72,7 +68,7 @@ class RealTimeAnalyzer:
                 return self.rule_based_analysis(text)
                 
         except Exception as e:
-            st.error(f"❌ BERT prediction error: {str(e)}")
+            # Pas d'erreur affichée
             return self.rule_based_analysis(text)
     
     def predict_article(self, article):
@@ -105,7 +101,7 @@ class RealTimeAnalyzer:
         total_score = reliability_score - fake_score
         
         if total_score >= 2:
-            return "RELIABLE", 0.8
+            return "REAL", 0.8
         elif total_score <= -1:
             return "FAKE", 0.9
         else:

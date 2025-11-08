@@ -64,7 +64,8 @@ def load_model_with_vectorizer():
     """
     found_files = find_model_files()
     
-    st.info("🔍 Searching for model files...")
+    alert_box("Message à afficher", alert_type="success")
+
     for file_type, path in found_files.items():
         if path:
             st.success(f"✅ Found {file_type}: {os.path.basename(path)}")

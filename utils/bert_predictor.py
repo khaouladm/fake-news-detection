@@ -14,24 +14,22 @@ class BERTPredictor:
         self.load_models()
     
     def load_models(self):
-        """Load BERT model, tokenizer, and classifier"""
+        """Load BERT model, tokenizer, and classifier silently"""
         try:
             # Load classifier
             classifier_path = "models/fake_news_model.pkl"
             if os.path.exists(classifier_path):
                 self.classifier = joblib.load(classifier_path)
-                st.success("✅ Classifier model loaded")
+                # Pas de message de succès
             else:
-                st.error(f"❌ Classifier not found at {classifier_path}")
                 return False
             
             # Load BERT tokenizer
             tokenizer_path = "models/bert_tokenizer"
             if os.path.exists(tokenizer_path):
                 self.tokenizer = BertTokenizer.from_pretrained(tokenizer_path)
-                st.success("✅ BERT tokenizer loaded")
+                # Pas de message de succès
             else:
-                st.error(f"❌ BERT tokenizer not found at {tokenizer_path}")
                 return False
             
             # Load BERT model
@@ -40,16 +38,14 @@ class BERTPredictor:
                 self.bert = BertModel.from_pretrained(bert_path)
                 self.bert.to(self.device)
                 self.bert.eval()  # Set to evaluation mode
-                st.success("✅ BERT model loaded")
+                # Pas de message de succès
             else:
-                st.error(f"❌ BERT model not found at {bert_path}")
                 return False
             
-            st.success("🚀 BERT Prediction System Ready!")
             return True
             
         except Exception as e:
-            st.error(f"❌ Error loading models: {str(e)}")
+            # Pas d'erreur affichée
             return False
     
     def preprocess_text(self, text):
@@ -117,7 +113,7 @@ class BERTPredictor:
             return "FAKE" if prediction == 0 else "REAL", confidence
             
         except Exception as e:
-            st.error(f"❌ Prediction error: {str(e)}")
+            # Pas d'erreur affichée
             return "ERROR", 0.0
     
     def predict_batch(self, texts):
