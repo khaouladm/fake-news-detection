@@ -38,6 +38,9 @@ MANIFEST
 
 # Environment variables
 .env
+.venv
+.venv/Scripts
+
 .streamlit/secrets.toml
 
 # IDE

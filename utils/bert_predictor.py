@@ -1,71 +1,115 @@
 import torch
 import numpy as np
 import joblib
-from transformers import BertTokenizer, BertModel
+from transformers import BertTokenizer, BertModel, BertConfig
 import streamlit as st
 import os
+import re
+import string
+from deep_translator import GoogleTranslator
 
 class BERTPredictor:
     def __init__(self):
         self.model = None
         self.tokenizer = None
         self.classifier = None
-        self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+        
+        # ⚠️ FORCE CPU: Optimized for your laptop
+        self.device = torch.device('cpu')
+        
+        # Paths to your saved models
+        self.base_path = r"C:\Users\khaol\OneDrive\Desktop\Fake_News_Detection\models"
+        
         self.load_models()
     
     def load_models(self):
-        """Load BERT model, tokenizer, and classifier silently"""
+        """Load BERT model, tokenizer, and classifier"""
         try:
-            # Load classifier
-            classifier_path = "models/fake_news_model.pkl"
+            # 1. Load the Classifier
+            classifier_path = os.path.join(self.base_path, "fake_news_model.pkl")
             if os.path.exists(classifier_path):
                 self.classifier = joblib.load(classifier_path)
-                # Pas de message de succès
+                st.success("✅ Classifier model loaded")
             else:
                 return False
             
-            # Load BERT tokenizer
-            tokenizer_path = "models/bert_tokenizer"
+            # 2. Load BERT Tokenizer
+            tokenizer_path = os.path.join(self.base_path, "bert_tokenizer")
             if os.path.exists(tokenizer_path):
                 self.tokenizer = BertTokenizer.from_pretrained(tokenizer_path)
-                # Pas de message de succès
+                st.success("✅ BERT tokenizer loaded")
             else:
+                st.error(f"❌ BERT tokenizer not found at {tokenizer_path}")
                 return False
             
-            # Load BERT model
-            bert_path = "models/bert_model"
+            # 3. Load BERT Model (MANUAL METHOD)
+            bert_path = os.path.join(self.base_path, "bert_model")
+            
             if os.path.exists(bert_path):
                 self.bert = BertModel.from_pretrained(bert_path)
                 self.bert.to(self.device)
                 self.bert.eval()  # Set to evaluation mode
-                # Pas de message de succès
+                st.success("✅ BERT model loaded")
             else:
+                st.error(f"❌ BERT model not found at {bert_path}")
                 return False
             
+            st.success("🚀 BERT Prediction System Ready!")
             return True
             
         except Exception as e:
             # Pas d'erreur affichée
             return False
     
+    def translate_to_english(self, text):
+        """
+        Helper to automatically translate any input text to English.
+        """
+        try:
+            if not isinstance(text, str) or not text.strip():
+                return ""
+                
+            # Basic check: if text looks like English, skip translation
+            if re.match(r'^[a-zA-Z0-9\s\.,!?\'"]+$', text[:50]):
+                return text
+
+            # Initialize translator
+            translator = GoogleTranslator(source='auto', target='en')
+            translated_text = translator.translate(text)
+            return translated_text
+            
+        except Exception as e:
+            # If translation fails, return original
+            print(f"Translation warning: {e}")
+            return text
+
     def preprocess_text(self, text):
-        """Preprocess text similar to your training"""
-        import re
-        import string
-        
+        """
+        Clean text (Standard cleaning for BERT)
+        """
+        if not isinstance(text, str):
+            return ""
+            
         text = text.lower()
-        text = re.sub('\[.*?\]', '', text)
-        text = re.sub("\\W", " ", text)
-        text = re.sub('https?://\S+|www\.\S+', '', text)
-        text = re.sub('<.*?>+', '', text)
-        text = re.sub('[%s]' % re.escape(string.punctuation), '', text)
-        text = re.sub('\n', '', text)
-        text = re.sub('\w*\d\w*', '', text)
+        
+        # Remove URLs
+        text = re.sub(r'https?://\S+|www\.\S+', '', text)
+        
+        # Remove HTML tags
+        text = re.sub(r'<.*?>', '', text)
+        
+        # Remove punctuation
+        text = text.translate(str.maketrans('', '', string.punctuation))
+        
+        # Remove newlines and extra spaces
+        text = re.sub(r'\n', ' ', text)
+        text = re.sub(r'\s+', ' ', text).strip()
+        
         return text
     
     def get_bert_embedding(self, text):
-        """Get BERT embedding for text (same as training)"""
-        # Preprocess text
+        """Get BERT embedding for text (Feature Extraction)"""
+        # Preprocess
         processed_text = self.preprocess_text(text)
         
         # Tokenize
@@ -75,16 +119,13 @@ class BERTPredictor:
             truncation=True,
             padding=True, 
             max_length=128
-        )
+        ).to(self.device)
         
-        # Move to device (GPU if available)
-        inputs = {key: value.to(self.device) for key, value in inputs.items()}
-        
-        # Get BERT embeddings
+        # Get Embeddings
         with torch.no_grad():
             outputs = self.bert(**inputs)
         
-        # Mean pooling (same as training)
+        # Mean pooling (Average of all word vectors)
         embedding = outputs.last_hidden_state.mean(dim=1).squeeze()
         
         return embedding.cpu().numpy()
@@ -93,37 +134,34 @@ class BERTPredictor:
         """Predict if text is fake news"""
         try:
             if self.classifier is None or self.bert is None:
-                return "UNCERTAIN", 0.5
+                return "UNCERTAIN", 0.0
             
-            # Get BERT embedding
-            embedding = self.get_bert_embedding(text)
+            # 1. TRANSLATE TO ENGLISH FIRST
+            english_text = self.translate_to_english(text)
+            
+            # 2. Convert Text -> Numbers (Embedding)
+            embedding = self.get_bert_embedding(english_text)
+            
+            # Reshape for classifier (1 sample, N features)
             embedding = embedding.reshape(1, -1)
             
-            # Predict with classifier
+            # 3. Predict with Classifier
             prediction = self.classifier.predict(embedding)[0]
             
-            # Get probability if available
+            # 4. Get Confidence Score
             if hasattr(self.classifier, 'predict_proba'):
-                probability = self.classifier.predict_proba(embedding)[0]
-                confidence = max(probability)
+                probs = self.classifier.predict_proba(embedding)[0]
+                confidence = max(probs)
             else:
-                confidence = 0.8
+                # Fallback for models without proba
+                confidence = 0.9 
             
-            # Map prediction
-            return "FAKE" if prediction == 0 else "REAL", confidence
+            # 5. Map Result
+            # Based on typical training (0=Fake, 1=Real)
+            label = "REAL" if prediction == 1 else "FAKE"
+            
+            return label, confidence
             
         except Exception as e:
             # Pas d'erreur affichée
             return "ERROR", 0.0
-    
-    def predict_batch(self, texts):
-        """Predict multiple texts"""
-        results = []
-        for text in texts:
-            prediction, confidence = self.predict(text)
-            results.append({
-                'prediction': prediction,
-                'confidence': confidence,
-                'text': text
-            })
-        return results
