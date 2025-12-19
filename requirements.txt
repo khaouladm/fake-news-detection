@@ -1,34 +1,20 @@
 streamlit>=1.22.0
-pandas>=1.3.0
-numpy>=1.21.0
-scikit-learn>=1.0.0
-transformers>=4.20.0
-torch>=1.9.0
-plotly>=5.8.0
-requests>=2.26.0
-beautifulsoup4>=4.10.0
-tqdm>=4.64.0
-nltk>=3.6.0
-spacy>=3.0.0
-
-# Core Data Science & ML
 pandas>=1.5.0
 numpy>=1.21.0
-scikit-learn>=1.2.0
+scikit-learn==1.6.1
 joblib>=1.2.0
 
 # Deep Learning & NLP
 torch>=1.13.0
 transformers>=4.25.0
-nltk>=3.8.0
-spacy>=3.5.0
+sentence-transformers>=2.2.0
+safetensors>=0.3.0
+tokenizers>=0.13.3
+sentencepiece>=0.1.97
+huggingface-hub>=0.14.0
 
-# Web Framework & UI
+# Web / UI
 streamlit>=1.22.0
-
-# Data Visualization
-plotly>=5.13.0
-altair>=4.2.0
 
 # Web Scraping & APIs
 requests>=2.28.0
@@ -36,16 +22,22 @@ beautifulsoup4>=4.11.0
 newspaper3k>=0.2.8
 feedparser>=6.0.0
 selenium>=4.8.0
+duckduckgo-search>=2.5.0
 
-# Utilities
+# Utilities & NLP helpers
+deep-translator>=1.8.1
 tqdm>=4.64.0
+nltk>=3.8.0
+spacy>=3.5.0
 python-dotenv>=0.19.0
 pillow>=9.0.0
 lxml>=4.9.0
 
-# Optional (for specific features)
+# Visualization (optional)
+plotly>=5.13.0
+altair>=4.2.0
+
+# Optional / extra features
 textblob>=0.17.0
 wordcloud>=1.8.0
 gensim>=4.2.0
-deep-translator
-treamlit-autorefresh
