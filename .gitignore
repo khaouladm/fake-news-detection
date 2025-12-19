@@ -1,5 +1,5 @@
 # Virtual environment
-venv/
+.venv/
 ENV/
 env/
 
@@ -39,7 +39,6 @@ MANIFEST
 # Environment variables
 .env
 .venv
-.venv/Scripts
 
 .streamlit/secrets.toml
 
