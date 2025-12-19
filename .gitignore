@@ -38,7 +38,7 @@ MANIFEST
 
 # Environment variables
 .env
-.venv
+.venv/
 
 .streamlit/secrets.toml
 
